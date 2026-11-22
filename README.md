@@ -38,9 +38,8 @@ Data sources → File-watcher + FastAPI ingestion (batch and stream, with valida
 ## How to run
 
 1. Install **Docker Desktop**.
-2. Put the 7 source CSV files in `pharma-dwh/data/seed/` (not on GitHub because of their size).
-3. In the `pharma-dwh` folder run: `docker compose up -d --build`
-4. Open Airflow at http://localhost:8080 (admin / admin) and trigger `sdi_00_master_pipeline` with **refresh = 0** (historical load), then **refresh = 1** and **refresh = 2** (new data).
-5. Open Grafana at http://localhost:3000 (admin / admin) to see the data engineering dashboards.
+2. In the `pharma-dwh` folder run: `docker compose up -d --build`
+3. Open Airflow at http://localhost:8080 (admin / admin) and trigger `sdi_00_master_pipeline` with **refresh = 0** (historical load), then **refresh = 1** and **refresh = 2** (new data).
+4. Open Grafana at http://localhost:3000 (admin / admin) to see the data engineering dashboards.
 
 To start again from zero: `docker compose exec airflow-scheduler python -m scripts.reset`
