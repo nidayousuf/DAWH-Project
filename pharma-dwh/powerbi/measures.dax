@@ -1,0 +1,33 @@
+// ---------- FactSales ----------
+Net Sales = SUM ( fact_sales[net_sales_usd] )
+Gross Sales = SUM ( fact_sales[gross_sales_usd] )
+COGS = SUM ( fact_sales[cogs_usd] )
+Gross Margin = SUM ( fact_sales[gross_margin_usd] )
+Gross Margin % = DIVIDE ( [Gross Margin], [Net Sales] )
+Packs Sold = SUM ( fact_sales[qty_sold] )
+Number of Sales = COUNTROWS ( fact_sales )
+Return Rate % = DIVIDE ( SUM ( fact_sales[qty_returned] ), [Packs Sold] )
+Discount Rate % = DIVIDE ( SUM ( fact_sales[discount_usd] ), [Gross Sales] )
+Net Sales LY = CALCULATE ( [Net Sales], SAMEPERIODLASTYEAR ( dim_date[full_date] ) )
+Sales Growth % = DIVIDE ( [Net Sales] - [Net Sales LY], [Net Sales LY] )
+Data Through = CALCULATE ( MAX ( dim_date[full_date] ), fact_sales )
+
+// ---------- FactDemand ----------
+Forecast Packs = SUM ( fact_demand[qty_forecast] )
+Consumed Packs = SUM ( fact_demand[qty_consumed] )
+Requested Packs = SUM ( fact_demand[qty_requested] )
+Received Packs = SUM ( fact_demand[qty_received] )
+Actual to Forecast = DIVIDE ( [Consumed Packs], [Forecast Packs] )
+Order Fill Rate % = DIVIDE ( [Received Packs], [Requested Packs] )
+Forecast Accuracy % =
+    1 - DIVIDE (
+        SUMX ( fact_demand, ABS ( fact_demand[qty_consumed] - fact_demand[qty_forecast] ) ),
+        [Consumed Packs] )
+Unfulfilled Packs = SUM ( fact_demand[qty_unfulfilled] )
+Unfulfilled Value $ = SUM ( fact_demand[unfulfilled_value_usd] )
+Stockout Days = SUM ( fact_demand[stockout_days] )
+Avg Lead Time Days = AVERAGE ( fact_demand[lead_time_days] )
+// semi-additive: closing stock of the last month in the selection
+Closing Stock =
+    CALCULATE ( SUM ( fact_demand[qty_closing_stock] ),
+        LASTNONBLANK ( dim_date[full_date], CALCULATE ( SUM ( fact_demand[qty_closing_stock] ) ) ) )
