@@ -1,0 +1,650 @@
+{
+  "uid": "dwh-batch",
+  "title": "1 - Batch Ingestion (Excel/CSV -> Staging)",
+  "description": "",
+  "tags": [
+    "pharma_dwh",
+    "data-engineering"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "editable": true,
+  "templating": {
+    "list": [
+      {
+        "name": "refresh_label",
+        "label": "Refresh",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "pharma-pg"
+        },
+        "query": "SELECT DISTINCT refresh_label FROM meta.batch_ingestion_log WHERE refresh_label IS NOT NULL ORDER BY 1",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "definition": "",
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 2
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Batch ingestion** - every file dropped in `data/landing` is picked up by the file-watcher, posted to the ingestion API, validated and COPY-loaded into Postgres staging. One row per load in `meta.batch_ingestion_log`."
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Batch Success Rate",
+      "description": "Successful runs / total attempted runs x 100 (PARTIAL = finished, some rows rejected)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT 100.0*count(*) FILTER (WHERE status IN ('SUCCESS','PARTIAL'))/NULLIF(count(*),0) FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring}) AND status<>'RUNNING'"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Batches run",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT count(*) FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring})"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Rows processed",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT sum(rows_read) FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring})"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Rows loaded",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT sum(rows_loaded) FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring})"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Rows rejected",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT sum(rows_rejected) FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring})"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Total load time",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT sum(duration_seconds) FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring})"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "barchart",
+      "title": "Batch Load Duration (s) per source file",
+      "description": "Timestamp_end - Timestamp_start per file, split into read / validate / insert phases",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT regexp_replace(file_name,'(__.*)?\\.csv$','') || ' [' || refresh_label || ']' AS file,\n            read_seconds AS \"read\", validate_seconds AS \"validate\", insert_seconds AS \"insert\"\n         FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring}) AND status<>'RUNNING' ORDER BY duration_seconds DESC"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "normal",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "xTickLabelRotation": 0,
+        "barWidth": 0.8,
+        "groupWidth": 0.7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Rows Processed per Batch (len(df))",
+      "description": "Rows read from each file, split into loaded / rejected / skipped (already staged)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 11
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT regexp_replace(file_name,'(__.*)?\\.csv$','') || ' [' || refresh_label || ']' AS file,\n            rows_loaded AS loaded, rows_rejected AS rejected, rows_skipped AS skipped\n         FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring}) AND status<>'RUNNING' ORDER BY rows_read DESC"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "normal",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "xTickLabelRotation": 0,
+        "barWidth": 0.8,
+        "groupWidth": 0.7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "barchart",
+      "title": "Throughput (rows/second) per load",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT source_key || ' [' || refresh_label || ']' AS load, rows_per_second\n         FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring}) AND status<>'RUNNING' ORDER BY batch_id"
+        }
+      ],
+      "options": {
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "xTickLabelRotation": -30,
+        "barWidth": 0.8,
+        "groupWidth": 0.7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "piechart",
+      "title": "Rejected rows by validation rule",
+      "description": "price > 0, valid dates, non-null SKU, duplicates ...",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT reason, count(*) FROM meta.rejected_records\n         WHERE channel='batch' AND batch_id IN (SELECT batch_id FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring})) GROUP BY 1"
+        }
+      ],
+      "options": {
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": true
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "displayLabels": [
+          "percent"
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "Batch load log",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT batch_id, refresh_label, file_name, status, rows_read, rows_loaded,\n            rows_rejected, rows_skipped, duration_seconds, rows_per_second, triggered_by, started_at, error_message\n         FROM meta.batch_ingestion_log WHERE refresh_label IN (${refresh_label:sqlstring}) ORDER BY batch_id DESC"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "All Pharma DWH dashboards",
+      "type": "dashboards",
+      "tags": [
+        "pharma_dwh"
+      ],
+      "asDropdown": true
+    }
+  ]
+}

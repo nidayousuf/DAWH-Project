@@ -1,0 +1,551 @@
+{
+  "uid": "dwh-storage",
+  "title": "3 - Storage & Staging Layer",
+  "description": "",
+  "tags": [
+    "pharma_dwh",
+    "data-engineering"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "editable": true,
+  "templating": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 2
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Storage** - captured after every refresh: `COUNT(*)` per table, physical size (`pg_total_relation_size`, `os.path.getsize`) and date coverage (MAX - MIN date, distinct year-months)."
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Rows in staging (ODS)",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 2,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT sum(row_count) FROM meta.storage_metrics WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND layer='staging'"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Rows in SDI star schema",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 5,
+        "y": 2,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT sum(row_count) FROM meta.storage_metrics WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND layer LIKE 'mart%'"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Postgres footprint",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 2,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT size_mb FROM meta.storage_metrics WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND object_name LIKE 'Postgres database%'"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "decmbytes",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "DuckDB mart file",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 2,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT size_mb FROM meta.storage_metrics WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND object_name LIKE 'DuckDB%'"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "decmbytes",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Sales date coverage (days)",
+      "description": "MAX(sales_date) - MIN(sales_date); 2023-2025 history = ~1,065 days, grows with each refresh",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 19,
+        "y": 2,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT date_span_days FROM meta.storage_metrics WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND object_name='stg.pharmacy_sales'"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "piechart",
+      "title": "Storage breakdown - % of staged rows by source domain",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT source_domain, row_count FROM meta.storage_metrics\n         WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND layer='staging'"
+        }
+      ],
+      "options": {
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": true
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "displayLabels": [
+          "percent"
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "barchart",
+      "title": "Storage footprint (MB) by source domain",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT source_domain, size_mb FROM meta.storage_metrics\n         WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND layer='staging' ORDER BY size_mb DESC"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "xTickLabelRotation": 0,
+        "barWidth": 0.8,
+        "groupWidth": 0.7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "decmbytes"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Table row count growth across refreshes (staging)",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT refresh_label, sum(row_count) FILTER (WHERE source_domain='Pharmacy sales') AS \"Pharmacy sales\",\n            sum(row_count) FILTER (WHERE source_domain='Warehouse') AS \"Warehouse\",\n            sum(row_count) FILTER (WHERE source_domain='IoT telemetry') AS \"IoT telemetry\",\n            sum(row_count) FILTER (WHERE source_domain='Hospital demand') AS \"Hospital demand\"\n         FROM meta.storage_metrics m WHERE layer='staging' AND captured_at = (SELECT max(captured_at) FROM meta.storage_metrics x WHERE x.refresh_label=m.refresh_label)\n         GROUP BY 1 ORDER BY min(captured_at)"
+        }
+      ],
+      "options": {
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "xTickLabelRotation": -30,
+        "barWidth": 0.8,
+        "groupWidth": 0.7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "barchart",
+      "title": "SDI mart rows by table",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT object_name, row_count FROM meta.storage_metrics WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND layer LIKE 'mart%' ORDER BY row_count DESC"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "xTickLabelRotation": 0,
+        "barWidth": 0.8,
+        "groupWidth": 0.7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Date Coverage Span check (2023 -> latest refresh)",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pharma-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pharma-pg"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT object_name, min_date, max_date, date_span_days,\n            distinct_months, CASE WHEN min_date <= '2023-02-01' AND distinct_months >= 36 THEN 'OK - full 2023-2025 coverage' ELSE 'CHECK' END AS coverage\n         FROM meta.storage_metrics WHERE captured_at = (SELECT max(captured_at) FROM meta.storage_metrics) AND min_date IS NOT NULL ORDER BY object_name"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "All Pharma DWH dashboards",
+      "type": "dashboards",
+      "tags": [
+        "pharma_dwh"
+      ],
+      "asDropdown": true
+    }
+  ]
+}
