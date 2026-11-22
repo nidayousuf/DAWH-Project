@@ -30,8 +30,7 @@ Medicines are sold through retail pharmacies, hospital pharmacies and online, an
 We built the **SDI data mart**: a fact constellation with **2 facts** (FactSales, FactDemand) and **5 dimensions** (Date, Medicine, Hospital, Pharmacy, Location), loaded and refreshed automatically.
 
 ## Pipeline
-
-![SDI pipeline](deliverables/SDI_Pipeline.png)
+<img width="526" height="318" alt="image" src="https://github.com/user-attachments/assets/d103d69f-a8fd-49c8-98fc-83c25109cf97" />
 
 Data sources → File-watcher + FastAPI ingestion (batch and stream, with validation) → PostgreSQL staging → DuckDB star schema → published to PostgreSQL `sdi` schema. Grafana monitors ingestion, streaming, storage and queries. Apache Airflow runs every step (DAGs `sdi_00` to `sdi_05`).
 
