@@ -1,0 +1,110 @@
+# Pharma DWH + BI pipeline - one command brings up the whole stack:
+#   docker compose up -d --build
+# Airflow UI  http://localhost:8080  (admin / admin)
+# Grafana     http://localhost:3000  (admin / admin)  - 4 data-engineering dashboards
+# API docs    http://localhost:8000/docs
+# Postgres    localhost:5432  db=pharma_dwh  user=postgres  pw=postgres   (Power BI connects here)
+
+x-dwh-env: &dwh-env
+  PG_HOST: postgres
+  PG_PORT: "5432"
+  PG_DB: pharma_dwh
+  PG_USER: postgres
+  PG_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  INGEST_API_URL: http://ingestion-api:8000
+  DWH_HOME: /opt/pharma-dwh
+  PYTHONPATH: /opt/pharma-dwh
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.airflow
+  image: pharma-dwh-airflow:latest
+  user: "${AIRFLOW_UID:-50000}:0"
+  environment:
+    <<: *dwh-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:${POSTGRES_PASSWORD:-postgres}@postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "30"
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./:/opt/pharma-dwh
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports: ["5434:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d
+      - ./sql/postgres:/sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 20
+
+  ingestion-api:
+    build: { context: ., dockerfile: docker/Dockerfile.app }
+    image: pharma-dwh-app:latest
+    command: uvicorn ingestion.api:app --host 0.0.0.0 --port 8000
+    environment: *dwh-env
+    volumes: ["./:/opt/pharma-dwh"]
+    ports: ["8010:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: unless-stopped
+
+  file-watcher:
+    build: { context: ., dockerfile: docker/Dockerfile.app }
+    image: pharma-dwh-app:latest
+    command: python -m ingestion.watcher
+    environment: *dwh-env
+    volumes: ["./:/opt/pharma-dwh"]
+    depends_on: [ingestion-api]
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command: -c "airflow db migrate && airflow users create --username admin --password admin --firstname Med --lastname Nova --role Admin --email admin@example.com || true"
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports: ["8080:8080"]
+    depends_on:
+      airflow-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    depends_on:
+      airflow-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/00_de_observability.json
+    ports: ["3000:3000"]
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  pgdata:
